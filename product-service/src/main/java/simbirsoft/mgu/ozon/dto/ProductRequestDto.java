@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import simbirsoft.mgu.ozon.domain.Category;
 
+import java.util.List;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
@@ -15,4 +17,5 @@ public class ProductRequestDto {
     private String description;
     private Integer price;
     private Category category;
+    private List<String> fileIds;
 }
