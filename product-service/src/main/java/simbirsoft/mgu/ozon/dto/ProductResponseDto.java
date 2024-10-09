@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import simbirsoft.mgu.ozon.domain.Category;
 
+import java.util.List;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
@@ -18,4 +20,6 @@ public class ProductResponseDto {
     private Category category;
     private String sellerFirstName;
     private String sellerLastName;
+
+    private List<String> fileIds;
 }

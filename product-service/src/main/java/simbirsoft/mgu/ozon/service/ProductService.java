@@ -2,10 +2,12 @@ package simbirsoft.mgu.ozon.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import simbirsoft.mgu.ozon.domain.Files;
 import simbirsoft.mgu.ozon.domain.Product;
 import simbirsoft.mgu.ozon.domain.User;
 import simbirsoft.mgu.ozon.dto.ProductRequestDto;
 import simbirsoft.mgu.ozon.dto.ProductResponseDto;
+import simbirsoft.mgu.ozon.repository.FileRepository;
 import simbirsoft.mgu.ozon.repository.ProductRepository;
 import simbirsoft.mgu.ozon.repository.UserRepository;
 
@@ -19,6 +21,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final FileRepository fileRepository;
 
     public ProductResponseDto create(Integer userId, ProductRequestDto productRequestDto) {
         Optional<User> userOptional = userRepository.findById(userId);
@@ -36,6 +39,7 @@ public class ProductService {
                 .build();
 
         product = productRepository.save(product);
+        saveFileIds(productRequestDto.getFileIds(), product);
 
         ProductResponseDto productResponseDto = ProductResponseDto.builder()
                 .id(product.getId())
@@ -45,6 +49,7 @@ public class ProductService {
                 .category(product.getCategory())
                 .sellerFirstName(user.getFirstName())
                 .sellerLastName(user.getLastName())
+                .fileIds(productRequestDto.getFileIds())
                 .build();
 
         return productResponseDto;
@@ -61,6 +66,10 @@ public class ProductService {
         List<Product> products = productRepository.getProductsByOwner(user);
 
         for (Product product : products) {
+            List<String> fileIds = new ArrayList<>();
+            for (Files file : product.getFiles()) {
+                fileIds.add(file.getFileId());
+            }
             ProductResponseDto productResponseDto = ProductResponseDto.builder()
                     .id(product.getId())
                     .name(product.getName())
@@ -69,6 +78,7 @@ public class ProductService {
                     .category(product.getCategory())
                     .sellerFirstName(user.getFirstName())
                     .sellerLastName(user.getLastName())
+                    .fileIds(fileIds)
                     .build();
             result.add(productResponseDto);
         }
@@ -96,6 +106,7 @@ public class ProductService {
                 .category(product.getCategory())
                 .sellerFirstName(user.getFirstName())
                 .sellerLastName(user.getLastName())
+                .fileIds(product.getFiles().stream().map(Files::getFileId).toList())
                 .build();
 
         return productResponseDto;
@@ -120,6 +131,7 @@ public class ProductService {
         product.setPrice(productRequestDto.getPrice());
 
         product = productRepository.save(product);
+        updateFiles(productRequestDto.getFileIds(), product);
 
         ProductResponseDto productResponseDto = ProductResponseDto.builder()
                 .id(product.getId())
@@ -129,6 +141,7 @@ public class ProductService {
                 .category(product.getCategory())
                 .sellerFirstName(user.getFirstName())
                 .sellerLastName(user.getLastName())
+                .fileIds(productRequestDto.getFileIds())
                 .build();
 
         return productResponseDto;
@@ -147,8 +160,31 @@ public class ProductService {
         }
         Product product = productOptional.get();
 
+        deleteFiles(product);
         productRepository.delete(product);
 
         return "Product with id: " + productId + " deleted";
+    }
+
+    private void saveFileIds(List<String> fileIds, Product product) {
+        for (String fileId : fileIds) {
+            Files file = Files.builder()
+                    .product(product)
+                    .fileId(fileId)
+                    .build();
+            fileRepository.save(file);
+        }
+    }
+
+    private void updateFiles(List<String> fileIds, Product product) {
+        deleteFiles(product);
+        saveFileIds(fileIds, product);
+    }
+
+    private void deleteFiles(Product product) {
+        List<Files> files = product.getFiles();
+        for (Files file : files) {
+            fileRepository.delete(file);
+        }
     }
 }
